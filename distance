@@ -1,0 +1,107 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# ## Working out the significances of coinsident distances for the 17/08/17 events##
+# 
+# Taking galaxy NGC 4993 distance data from [here](http://ned.ipac.caltech.edu/cgi-bin/objsearch?objname=NGC+4993&extend=no&hconst=73&omegam=0.27&omegav=0.73&corr_z=1&out_csys=Equatorial&out_equinox=J2000.0&obj_sort=RA+or+Longitude&of=pre_text&zv_breaker=30000.0&list_limit=5&img_stamp=YES#NR_Distances_0)
+# 
+# | NGC 4993  | Distance Modulus (mag) | Metric Distance (Mpc) |
+# |-----------|------------------------|-----------------------|
+# | Mean      |         32.94          |        38.909         |
+# | Std. Dev. |         0.25           |        4.251          |
+# | Min.      |         32.46          |        31.000         |
+# | Max.      |         33.22          |        44.000         |
+# | Median    |         33.01          |        40.000         |
+# 
+# Taking gravitational wave data from [here](https://iopscience.iop.org/article/10.3847/2041-8213/aa91c9/meta) (also claims NGC 4993 is host galaxy of optical counterpart)
+# 
+# GW distance = 40 $\pm$ 8
+
+from matplotlib import pyplot as plt
+import numpy as np
+
+def gaussian(x, mu, sig):
+    return np.exp(-np.power(x - mu, 2.) / (2 * np.power(sig, 2.)))
+
+# NGC 4993 Metric Distance
+ngc4993_md_mu = 38.909
+ngc4993_md_sigma = 4.251
+ngc4993_md_x1 = 31.000
+ngc4993_md_x2 = 44.000
+
+# NGC 4993 Distance Modulus
+ngc4993_dm_mu = 32.94
+ngc4993_dm_sigma = 0.25
+ngc4993_dm_x1 = 32.46
+ngc4993_dm_x2 = 33.22
+
+# GW distance
+gw_mu = 40
+gw_sigma = 8
+gw_x1 = gw_mu - 3*gw_sigma #min(ngc4993_md_x1, ngc4993_dm_x1)
+gw_x2 = gw_mu + 3*gw_sigma #max(ngc4993_md_x2, ngc4993_dm_x2)
+
+ngc4993_dm_x_values = np.linspace(ngc4993_dm_x1, ngc4993_dm_x2, 120)
+ngc4993_dm_gauss = gaussian(ngc4993_dm_x_values, ngc4993_dm_mu, ngc4993_dm_sigma)
+plt.plot(ngc4993_dm_x_values, ngc4993_dm_gauss, color='cornflowerblue', label='NGC 4993 Distance Modulus')
+
+ngc4993_md_x_values = np.linspace(ngc4993_md_x1, ngc4993_md_x2, 120)
+ngc4993_md_gauss = gaussian(ngc4993_md_x_values, ngc4993_md_mu, ngc4993_md_sigma)
+plt.plot(ngc4993_md_x_values, ngc4993_md_gauss, color='purple', label='NGC 4993 Luminosity Distance')
+
+gw_x_values = np.linspace(gw_x1, gw_x2, 120)
+gw_gauss = gaussian(gw_x_values, gw_mu, gw_sigma)
+plt.plot(gw_x_values, gw_gauss, color='orange', label='Gravitational Waves')
+
+plt.legend(loc='lower right')
+plt.title('Distance Estimates for the 17/08/17 events')
+plt.xlabel('Distance (Mpc)')
+plt.ylabel('Normalised PDF')
+plt.show()
+
+# ### Gaps in knowledge ###
+# 
+# There still needs to be some kind of normalising factor on the distributions, taking into account the $d\theta$ and $N_{points}$ equivalents from the localisation significances
+# 
+# Need: Prior and $d\theta$
+# 
+# For the $\textbf{localisation}$ plots:
+# 
+# Prior = $\frac{1}{4\pi}$
+# 
+# $d\theta$ = $\frac{4\pi}{N}$
+# 
+# $I_{\Omega} = \int_{\Theta^S} \frac{p_1 p_2}{prior} d\theta = 16\pi^2 \int_{\Theta^S} \frac{p_1 p_2}{N}$
+
+# Multiply the GW PDF with that of the galaxy Metric Distance
+# Metric distance is the luminosity distance with a (1 + z) factor, usually called proper distance
+# See https://en.wikipedia.org/wiki/Distance_measures_(cosmology) and https://arxiv.org/abs/astro-ph/9905116
+# for GWs,  there is a degeneracy between the inclination angle and the luminosity distance estimate which adds to the uncertainty
+gw_md_x_values = np.linspace(ngc4993_md_x1, ngc4993_md_x2, 120)
+gw_md_gauss = gaussian(gw_md_x_values, gw_mu, gw_sigma)
+
+plt.plot(ngc4993_md_x_values, ngc4993_md_gauss, color='purple', label='NGC 4993 Luminosity Distance')
+plt.plot(gw_x_values, gw_gauss, color='orange', label='Gravitational Waves')
+
+plt.plot(gw_md_x_values, gw_md_gauss*ngc4993_md_gauss, color='orchid', linestyle='dashed', label='Multiplication')
+plt.title('Multiplication of PDFs')
+plt.legend(loc='lower right')
+plt.xlabel('Distance (Mpc)')
+plt.ylabel('Normalised PDF')
+plt.show()
+
+# # Multiply the GW PDF with that of the galaxy Distance Modulus
+# # Modulus is the measure of the distance in terms of magnitude 
+# # m - M ~ log10(r) with r the distance its measured in magnitudes
+# gw_dm_x_values = np.linspace(ngc4993_dm_x1, ngc4993_dm_x2, 120)
+# gw_dm_gauss = gaussian(gw_dm_x_values, gw_mu, gw_sigma)
+
+# plt.plot(ngc4993_dm_x_values, ngc4993_dm_gauss, color='cornflowerblue', label='NGC 4993 Distance Modulus')
+# plt.plot(gw_x_values, gw_gauss, color='orange', label='Gravitational Waves')
+
+# plt.plot(gw_dm_x_values, gw_dm_gauss*ngc4993_dm_gauss, color='darkturquoise', linestyle='dashed', label='Multiplication')
+# plt.title('Multiplication of PDFs')
+# plt.legend()
+# plt.xlabel('Distance (Mpc)')
+# plt.ylabel('Normalised PDF')
+# plt.show()
