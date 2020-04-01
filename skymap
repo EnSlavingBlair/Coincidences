@@ -9,6 +9,7 @@ import os
 import matplotlib.pyplot as plt
 
 def get_map(event):
+    # get normalised map for input event name
     basepath = basepath0+event+'/'
     for entry in os.listdir(basepath):
         if os.path.isfile(os.path.join(basepath, entry)):
@@ -16,61 +17,66 @@ def get_map(event):
             return map_pdf / (4 * np.pi / len(map_pdf)) # to get normalisation of posterior st p*d_Omega = 1
 
 def coinc(hpx1, hpx2, event1, event2):
+    # get significance of two event localisations, following localisation significance method from Ashton et al 2018
     N_points = len(hpx1) # value taken from Ashton et al 2018 code is 12*2**12
-    d_Omega = 4 * np.pi / N_points
-    prior = 1 / (4 * np.pi)
-    add = hpx1 + hpx2
+    d_Omega = 4 * np.pi / N_points # size of pixels
+    prior = 1 / (4 * np.pi) # uniform prior over the whole sky
+    # view what the maps look like plotted together
+    add = (hpx1 + hpx2)/2
     hp.mollview(add)
     plt.title(str(event1)+" and "+str(event2))
     plt.savefig("data/joint_localisation_maps/"+str(event1)+"-"+str(event2)+"-add")
+    # view what the maps look like following significance method in the log scale
     mult = hpx1 * hpx2
-    I_Omega = sum(mult) / prior * d_Omega
+    I_Omega = sum(mult) / prior * d_Omega # the significance of interest
     exp = np.floor(np.log10(np.abs(I_Omega))).astype(int)
     hp.mollview(mult / prior * d_Omega)
-    plt.title(str(event1)+" and "+str(event2)+": $I_\Omega = $"+str(I_Omega))
+    plt.title(str(event1)+" and "+str(event2)+": $log10(I_\Omega) = $"+str(I_Omega))
     plt.savefig("data/joint_localisation_maps/"+str(event1)+"-"+str(event2)+"-IOmega"+str(exp))
     return I_Omega
 
 def shape_maps(map1, map2):
+    # reshape the event maps to be the same size
     nside = max(hp.pixelfunc.get_nside(map1), hp.pixelfunc.get_nside(map2))
     return hp.pixelfunc.ud_grade(map1,nside), hp.pixelfunc.ud_grade(map2,nside)
 
+# The path to the folder that stores the fits files for each event of interest
+# each in its own folder named after the eg. GraceDB event name (for GW events)
 #basepath0 = 'data/sky_localisations/'
 basepath0 = 'data/170817_events/'
 
+# events to contain a string of each of the event names of interest eg. ['gw200213']
 events = []
 for entry in os.listdir(basepath0):
     if os.path.isdir(os.path.join(basepath0, entry)):
         events.append(entry)
 
+# will write the most significant coincideneces found using this meathod to "significant_coincidences.txt"
 f = open("significant_coincidences.txt","w")
 
+# Compare each event with each other event with no double ups
 for idx1 in range(len(events)):
     for idx2 in range(idx1+1,len(events)):
-        print(str(idx1)+"/"+str(len(events))+" : "+str(idx2)+"/"+str(len(events)))
-        I_Omega = "may be different shapes"
-#         try:
-        if events[idx1] != events[idx2]:
-            map1 = get_map(events[idx1])
+        print(str(idx1)+"/"+str(len(events))+" : "+str(idx2)+"/"+str(len(events))) # shows progress
+        I_Omega = "may be different shapes" # will print if rest doesn't work
+        if events[idx1] != events[idx2]: # avoiding comparing event to itself
+            map1 = get_map(events[idx1]) # get normalised map for event
             print("map1: "+events[idx1])
-            map2 = get_map(events[idx2])
+            map2 = get_map(events[idx2]) # get normalised map for event
             print("map2: "+events[idx2])
-            map1, map2 = shape_maps(map1,map2)
-            I_Omega = coinc(map1, map2, events[idx1], events[idx2])
+            map1, map2 = shape_maps(map1,map2) # set maps to be the same size
+            I_Omega = coinc(map1, map2, events[idx1], events[idx2]) # following Ashton et al 2018 to get significance
             #print("I_Omega for " + str(events[idx1]) + " and " + str(events[idx2]) + ": " + str(I_Omega))
-            if I_Omega >= 1:
+            if I_Omega >= 1: # write significance events to "significant_coincidences.txt"
                 f.write(str(events[idx1]) + " and " + str(events[idx2]) + ": " + str(I_Omega) + "\n")
-        elif events[idx1] == events[idx2]:
+        elif events[idx1] == events[idx2]: # double for loop at start should avoid this, prints if it doesn't work
             print("Tried comparing to itself")
-#         except:
-#             print(I_Omega)
-#             pass
 
 f.close()
 
-# test one map with itself - should be >~1
+# test one map with itself - should be >> 1 (probably around 200)
 idx = 1
-map1 = get_map(events[0])
+map1 = get_map(events[idx])
 map2 = get_map(events[idx])
 map1, map2 = shape_maps(map1,map2)
 I_Omega = coinc(map1, map2, events[0], events[idx])
