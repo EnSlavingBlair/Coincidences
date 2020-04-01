@@ -21,38 +21,43 @@ from matplotlib import pyplot as plt
 import numpy as np
 
 def gaussian(x, mu, sig):
+    # returns a Gaussian of mean mu, standard deviation sig, across x-axis x
     return np.exp(-np.power(x - mu, 2.) / (2 * np.power(sig, 2.)))
 
-# NGC 4993 Metric Distance
+# NGC 4993 Metric Distance Gaussian data; mu, sigma, min of x-axis (x1), max of x-axis (x2)
 ngc4993_md_mu = 38.909
 ngc4993_md_sigma = 4.251
 ngc4993_md_x1 = 31.000
 ngc4993_md_x2 = 44.000
 
-# NGC 4993 Distance Modulus
+# NGC 4993 Distance Modulus Gaussian data; mu, sigma, min of x-axis (x1), max of x-axis (x2)
 ngc4993_dm_mu = 32.94
 ngc4993_dm_sigma = 0.25
 ngc4993_dm_x1 = 32.46
 ngc4993_dm_x2 = 33.22
 
-# GW distance
+# GW distance Gaussian data; mu, sigma, min of x-axis (x1), max of x-axis (x2)
 gw_mu = 40
 gw_sigma = 8
 gw_x1 = gw_mu - 3*gw_sigma #min(ngc4993_md_x1, ngc4993_dm_x1)
 gw_x2 = gw_mu + 3*gw_sigma #max(ngc4993_md_x2, ngc4993_dm_x2)
 
+# plot the Gaussian distribution of the NGC 4993 Distance Modulus
 ngc4993_dm_x_values = np.linspace(ngc4993_dm_x1, ngc4993_dm_x2, 120)
 ngc4993_dm_gauss = gaussian(ngc4993_dm_x_values, ngc4993_dm_mu, ngc4993_dm_sigma)
 plt.plot(ngc4993_dm_x_values, ngc4993_dm_gauss, color='cornflowerblue', label='NGC 4993 Distance Modulus')
 
+# plot the Gaussian distribution of the NGC 4993 Metric Distance
 ngc4993_md_x_values = np.linspace(ngc4993_md_x1, ngc4993_md_x2, 120)
 ngc4993_md_gauss = gaussian(ngc4993_md_x_values, ngc4993_md_mu, ngc4993_md_sigma)
 plt.plot(ngc4993_md_x_values, ngc4993_md_gauss, color='purple', label='NGC 4993 Luminosity Distance')
 
+# plot the Gaussian distribution of the GW distance
 gw_x_values = np.linspace(gw_x1, gw_x2, 120)
 gw_gauss = gaussian(gw_x_values, gw_mu, gw_sigma)
 plt.plot(gw_x_values, gw_gauss, color='orange', label='Gravitational Waves')
 
+# join above 3 plots together into 1
 plt.legend(loc='lower right')
 plt.title('Distance Estimates for the 17/08/17 events')
 plt.xlabel('Distance (Mpc)')
@@ -77,13 +82,19 @@ plt.show()
 # Metric distance is the luminosity distance with a (1 + z) factor, usually called proper distance
 # See https://en.wikipedia.org/wiki/Distance_measures_(cosmology) and https://arxiv.org/abs/astro-ph/9905116
 # for GWs,  there is a degeneracy between the inclination angle and the luminosity distance estimate which adds to the uncertainty
+
+# reshape GW Gaussian to match shape of Metric Distance Gaussian
 gw_md_x_values = np.linspace(ngc4993_md_x1, ngc4993_md_x2, 120)
 gw_md_gauss = gaussian(gw_md_x_values, gw_mu, gw_sigma)
 
+# plot each separately
 plt.plot(ngc4993_md_x_values, ngc4993_md_gauss, color='purple', label='NGC 4993 Luminosity Distance')
 plt.plot(gw_x_values, gw_gauss, color='orange', label='Gravitational Waves')
 
+# plot multiplication of MD and GW
 plt.plot(gw_md_x_values, gw_md_gauss*ngc4993_md_gauss, color='orchid', linestyle='dashed', label='Multiplication')
+
+# join above 3 plots together into 1
 plt.title('Multiplication of PDFs')
 plt.legend(loc='lower right')
 plt.xlabel('Distance (Mpc)')
@@ -93,13 +104,19 @@ plt.show()
 # # Multiply the GW PDF with that of the galaxy Distance Modulus
 # # Modulus is the measure of the distance in terms of magnitude 
 # # m - M ~ log10(r) with r the distance its measured in magnitudes
+
+# reshape GW Gaussian to match shape of Distance Modulus Gaussian
 # gw_dm_x_values = np.linspace(ngc4993_dm_x1, ngc4993_dm_x2, 120)
 # gw_dm_gauss = gaussian(gw_dm_x_values, gw_mu, gw_sigma)
 
+# plot each separately
 # plt.plot(ngc4993_dm_x_values, ngc4993_dm_gauss, color='cornflowerblue', label='NGC 4993 Distance Modulus')
 # plt.plot(gw_x_values, gw_gauss, color='orange', label='Gravitational Waves')
 
+# plot multiplication of DM and GW
 # plt.plot(gw_dm_x_values, gw_dm_gauss*ngc4993_dm_gauss, color='darkturquoise', linestyle='dashed', label='Multiplication')
+
+# join above 3 plots together into 1
 # plt.title('Multiplication of PDFs')
 # plt.legend()
 # plt.xlabel('Distance (Mpc)')
