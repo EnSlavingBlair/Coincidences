@@ -19,10 +19,41 @@
 
 from matplotlib import pyplot as plt
 import numpy as np
+import itertools
+import re
+from astropy import coordinates as apc
+from astropy import units as u
 
 def gaussian(x, mu, sig):
     # returns a Gaussian of mean mu, standard deviation sig, across x-axis x
     return np.exp(-np.power(x - mu, 2.) / (2 * np.power(sig, 2.)))
+
+def calc_redshift(mpc_values):
+    # converts Mpc to z for a list or array
+    redshifts = []
+    for value in mpc_values:
+        mpc_dist = apc.Distance(value, u.Mpc)
+        redshifts.append(apc.Distance.compute_z(mpc_dist))
+    return redshifts
+
+def calc_redshift_single(mpc_values):
+    # converts Mpc to z for a single value
+    mpc_dist = apc.Distance(mpc_values, u.Mpc)
+    redshifts = apc.Distance.compute_z(mpc_dist)
+    return redshifts
+
+def calc_line(xvalues, yvalues, inx):
+    # calculates the equation of a line and assigns the values of y for the x values xin
+    x1 = xvalues[0]
+    x2 = xvalues[-1]
+    y1 = yvalues[0]
+    y2 = yvalues[-1]
+    m = (y2 - y1) / (x2 - x1)
+    b = y1 - m*x1
+    y = []
+    for x in inx:
+        y.append(m*x+b)
+    return y
 
 # NGC 4993 Metric Distance Gaussian data; mu, sigma, min of x-axis (x1), max of x-axis (x2)
 ngc4993_md_mu = 38.909
@@ -42,26 +73,62 @@ gw_sigma = 8
 gw_x1 = gw_mu - 3*gw_sigma #min(ngc4993_md_x1, ngc4993_dm_x1)
 gw_x2 = gw_mu + 3*gw_sigma #max(ngc4993_md_x2, ngc4993_dm_x2)
 
+# Efficiency function from EH (email on 8/5/2020)
+# using data from ~/Documents/PhD/2020+/data/GW_efficiency/GW_Eff_funct_2G_2pt5G.txt
+
+gw_eff_file = "GW_efficiency/GW_Eff_funct_2G_2pt5G.txt"
+
+data = []
+with open(gw_eff_file, 'r') as f:
+    # start at line 4 and stop at 4
+    for line in itertools.islice(f, 4, 5):
+        col_names = line[:-1]
+        col_names = col_names.split(" | ")
+    # start at line 5 (0, because last loop ended on 5) and never stop (None), until the end
+    for line in itertools.islice(f, 0, None):
+        data.append(re.split(' ;|  ;',line[:-1]))
+
+# put data from file into lists
+redshift = []
+o3_joint_orig = []
+o3_gw_only_orig = []
+for entry in data:
+    if float(entry[0])>= calc_redshift_single(gw_x1) and float(entry[0]) <= calc_redshift_single(gw_x2):
+        redshift.append(float(entry[0]))
+        o3_joint_orig.append(float(entry[3]))
+        o3_gw_only_orig.append(float(entry[4]))
+
+o3_joint = calc_line(redshift, o3_joint_orig, gw_x_z)
+o3_gw_only = calc_line(redshift, o3_gw_only_orig, gw_x_z)
+
 # plot the Gaussian distribution of the NGC 4993 Distance Modulus
 ngc4993_dm_x_values = np.linspace(ngc4993_dm_x1, ngc4993_dm_x2, 120)
+ngc4993_dm_x_z = calc_redshift(ngc4993_dm_x_values)
 ngc4993_dm_gauss = gaussian(ngc4993_dm_x_values, ngc4993_dm_mu, ngc4993_dm_sigma)
-plt.plot(ngc4993_dm_x_values, ngc4993_dm_gauss, color='cornflowerblue', label='NGC 4993 Distance Modulus')
+plt.plot(ngc4993_dm_x_z, ngc4993_dm_gauss, color='cornflowerblue', label='NGC 4993 Distance Modulus')
 
 # plot the Gaussian distribution of the NGC 4993 Metric Distance
 ngc4993_md_x_values = np.linspace(ngc4993_md_x1, ngc4993_md_x2, 120)
+ngc4993_md_x_z = calc_redshift(ngc4993_md_x_values)
 ngc4993_md_gauss = gaussian(ngc4993_md_x_values, ngc4993_md_mu, ngc4993_md_sigma)
-plt.plot(ngc4993_md_x_values, ngc4993_md_gauss, color='purple', label='NGC 4993 Luminosity Distance')
+plt.plot(ngc4993_md_x_z, ngc4993_md_gauss, color='purple', label='NGC 4993 Metric Distance')
 
 # plot the Gaussian distribution of the GW distance
 gw_x_values = np.linspace(gw_x1, gw_x2, 120)
+gw_x_z = calc_redshift(gw_x_values)
 gw_gauss = gaussian(gw_x_values, gw_mu, gw_sigma)
-plt.plot(gw_x_values, gw_gauss, color='orange', label='Gravitational Waves')
+plt.plot(gw_x_z, gw_gauss, color='orange', label='Gravitational Waves')
 
-# join above 3 plots together into 1
-plt.legend(loc='lower right')
+# plot efficiency function
+plt.plot(redshift, o3_joint_orig, color = 'lightgreen', label = 'Efficiency O3 Joint')
+plt.plot(redshift, o3_gw_only_orig, color = 'mediumseagreen', label = 'Efficiency O3 GW only')
+
+# join above plots together into 1
+plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 plt.title('Distance Estimates for the 17/08/17 events')
-plt.xlabel('Distance (Mpc)')
+plt.xlabel('Redshift (z)')
 plt.ylabel('Normalised PDF')
+plt.xticks(rotation=90)
 plt.show()
 
 # ### Gaps in knowledge ###
@@ -85,21 +152,39 @@ plt.show()
 
 # reshape GW Gaussian to match shape of Metric Distance Gaussian
 gw_md_x_values = np.linspace(ngc4993_md_x1, ngc4993_md_x2, 120)
+gw_md_x_z = calc_redshift(gw_md_x_values)
 gw_md_gauss = gaussian(gw_md_x_values, gw_mu, gw_sigma)
 
 # plot each separately
-plt.plot(ngc4993_md_x_values, ngc4993_md_gauss, color='purple', label='NGC 4993 Luminosity Distance')
-plt.plot(gw_x_values, gw_gauss, color='orange', label='Gravitational Waves')
+plt.plot(ngc4993_md_x_z, ngc4993_md_gauss, color='purple', label='NGC 4993 Metric Distance')
+plt.plot(gw_x_z, gw_gauss, color='orange', label='Gravitational Waves')
 
-# plot multiplication of MD and GW
-plt.plot(gw_md_x_values, gw_md_gauss*ngc4993_md_gauss, color='orchid', linestyle='dashed', label='Multiplication')
+# plot efficiency function
+plt.plot(gw_x_z, o3_joint, color = 'lightgreen', label = 'Efficiency O3 Joint')
+plt.plot(gw_x_z, o3_gw_only, color = 'mediumseagreen', label = 'Efficiency O3 GW only')
 
-# join above 3 plots together into 1
+plt.plot(gw_md_x_z, gw_md_gauss*ngc4993_md_gauss, color='orchid', linestyle='dashed', label='MD & GW')
+
+plt.plot(gw_md_x_z, gw_md_gauss*ngc4993_md_gauss*o3_joint, color='orchid', linestyle='dotted', label='MD & GW & O3J')
+
+plt.plot(gw_md_x_z, gw_md_gauss*ngc4993_md_gauss*o3_gw_only, color='orchid', linestyle='dashdot', label='MD & GW & O3GW')
+
+# join above plots together into 1
 plt.title('Multiplication of PDFs')
-plt.legend(loc='lower right')
-plt.xlabel('Distance (Mpc)')
+plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+plt.xlabel('Redshift (z)')
 plt.ylabel('Normalised PDF')
+plt.xticks(rotation=90)
 plt.show()
+
+# Get the equivalent of the localisation significance factor (I_Omega)
+d_theta = sum(np.diff(gw_md_x_z))/len(np.diff(gw_md_x_z)) # average of the steps
+
+I_Omega = sum(gw_md_gauss * ngc4993_md_gauss / o3_joint * d_theta)
+print(I_Omega)
+
+I_Omega = sum(gw_md_gauss * ngc4993_md_gauss / o3_gw_only * d_theta)
+print(I_Omega)
 
 # # Multiply the GW PDF with that of the galaxy Distance Modulus
 # # Modulus is the measure of the distance in terms of magnitude 
