@@ -3,7 +3,8 @@
 
 # ## Working out the significances of coincident distances for the 17/08/17 events##
 # 
-# Taking galaxy NGC 4993 distance data from [here](http://ned.ipac.caltech.edu/cgi-bin/objsearch?objname=NGC+4993&extend=no&hconst=73&omegam=0.27&omegav=0.73&corr_z=1&out_csys=Equatorial&out_equinox=J2000.0&obj_sort=RA+or+Longitude&of=pre_text&zv_breaker=30000.0&list_limit=5&img_stamp=YES#NR_Distances_0)
+# Taking galaxy NGC 4993 distance data from [here]
+# (http://ned.ipac.caltech.edu/cgi-bin/objsearch?objname=NGC+4993&extend=no&hconst=73&omegam=0.27&omegav=0.73&corr_z=1&out_csys=Equatorial&out_equinox=J2000.0&obj_sort=RA+or+Longitude&of=pre_text&zv_breaker=30000.0&list_limit=5&img_stamp=YES#NR_Distances_0)
 # 
 # | NGC 4993  | Distance Modulus (mag) | Metric Distance (Mpc) |
 # |-----------|------------------------|-----------------------|
@@ -13,7 +14,8 @@
 # | Max.      |         33.22          |        44.000         |
 # | Median    |         33.01          |        40.000         |
 # 
-# Taking gravitational wave data from [here](https://iopscience.iop.org/article/10.3847/2041-8213/aa91c9/meta) (also claims NGC 4993 is host galaxy of optical counterpart)
+# Taking gravitational wave data from [here](https://iopscience.iop.org/article/10.3847/2041-8213/aa91c9/meta)
+# (also claims NGC 4993 is host galaxy of optical counterpart)
 # 
 # GW distance = 40 $\pm$ 8 Mpc
 
@@ -24,9 +26,11 @@ import re
 from astropy import coordinates as apc
 from astropy import units as u
 
+
 def gaussian(x, mu, sig):
     # returns a Gaussian of mean mu, standard deviation sig, across x-axis x
     return np.exp(-np.power(x - mu, 2.) / (2 * np.power(sig, 2.)))
+
 
 def calc_redshift(mpc_values):
     # converts Mpc to z for a list or array
@@ -36,11 +40,13 @@ def calc_redshift(mpc_values):
         redshifts.append(apc.Distance.compute_z(mpc_dist))
     return redshifts
 
+
 def calc_redshift_single(mpc_values):
     # converts Mpc to z for a single value
     mpc_dist = apc.Distance(mpc_values, u.Mpc)
     redshifts = apc.Distance.compute_z(mpc_dist)
     return redshifts
+
 
 def calc_line(xvalues, yvalues, inx):
     # calculates the equation of a line and assigns the values of y for the x values xin
@@ -54,6 +60,7 @@ def calc_line(xvalues, yvalues, inx):
     for x in inx:
         y.append(m*x+b)
     return y
+
 
 # NGC 4993 Metric Distance Gaussian data; mu, sigma, min of x-axis (x1), max of x-axis (x2)
 ngc4993_md_mu = 38.909
@@ -70,8 +77,8 @@ ngc4993_dm_x2 = 33.22
 # GW distance Gaussian data; mu, sigma, min of x-axis (x1), max of x-axis (x2)
 gw_mu = 40
 gw_sigma = 8
-gw_x1 = gw_mu - 3*gw_sigma #min(ngc4993_md_x1, ngc4993_dm_x1)
-gw_x2 = gw_mu + 3*gw_sigma #max(ngc4993_md_x2, ngc4993_dm_x2)
+gw_x1 = gw_mu - 3*gw_sigma  # min(ngc4993_md_x1, ngc4993_dm_x1)
+gw_x2 = gw_mu + 3*gw_sigma  # max(ngc4993_md_x2, ngc4993_dm_x2)
 
 # Efficiency function from EH (email on 8/5/2020)
 # using data from ~/Documents/PhD/2020+/data/GW_efficiency/GW_Eff_funct_2G_2pt5G.txt
@@ -133,7 +140,8 @@ plt.show()
 
 # ### Gaps in knowledge ###
 # 
-# There still needs to be some kind of normalising factor on the distributions, taking into account the $d\theta$ and $N_{points}$ equivalents from the localisation significances
+# There still needs to be some kind of normalising factor on the distributions, taking into account the $d\theta$ and
+# $N_{points}$ equivalents from the localisation significances
 # 
 # Need: Prior and $d\theta$
 # 
@@ -148,7 +156,8 @@ plt.show()
 # Multiply the GW PDF with that of the galaxy Metric Distance
 # Metric distance is the luminosity distance with a (1 + z) factor, usually called proper distance
 # See https://en.wikipedia.org/wiki/Distance_measures_(cosmology) and https://arxiv.org/abs/astro-ph/9905116
-# for GWs,  there is a degeneracy between the inclination angle and the luminosity distance estimate which adds to the uncertainty
+# for GWs,  there is a degeneracy between the inclination angle and the luminosity distance estimate which adds to the
+# uncertainty
 
 # reshape GW Gaussian to match shape of Metric Distance Gaussian
 gw_md_x_values = np.linspace(ngc4993_md_x1, ngc4993_md_x2, 120)
@@ -167,7 +176,8 @@ plt.plot(gw_md_x_z, gw_md_gauss*ngc4993_md_gauss, color='orchid', linestyle='das
 
 plt.plot(gw_md_x_z, gw_md_gauss*ngc4993_md_gauss*o3_joint, color='orchid', linestyle='dotted', label='MD & GW & O3J')
 
-plt.plot(gw_md_x_z, gw_md_gauss*ngc4993_md_gauss*o3_gw_only, color='orchid', linestyle='dashdot', label='MD & GW & O3GW')
+plt.plot(gw_md_x_z, gw_md_gauss*ngc4993_md_gauss*o3_gw_only, color='orchid', linestyle='dashdot',
+         label='MD & GW & O3GW')
 
 # join above plots together into 1
 plt.title('Multiplication of PDFs')
@@ -199,7 +209,8 @@ print(I_Omega)
 # plt.plot(gw_x_values, gw_gauss, color='orange', label='Gravitational Waves')
 
 # plot multiplication of DM and GW
-# plt.plot(gw_dm_x_values, gw_dm_gauss*ngc4993_dm_gauss, color='darkturquoise', linestyle='dashed', label='Multiplication')
+# plt.plot(gw_dm_x_values, gw_dm_gauss*ngc4993_dm_gauss, color='darkturquoise', linestyle='dashed',
+# label='Multiplication')
 
 # join above 3 plots together into 1
 # plt.title('Multiplication of PDFs')
