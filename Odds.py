@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from numpy import linspace, ones
+from numpy import linspace, ones, insert
 import matplotlib.pyplot as plt
 
 #  Using equation 30 from Ashton et al 2018 paper for different values of delta-t
@@ -11,7 +11,7 @@ R_fermi_persec = R_fermi_perday / 24 / 60 / 60
 I_Omega = 32.4  # value taken from Ashton et al paper, for GW170817 and GRB 170817A coincidence
 
 min_time = 0
-max_time_day = 1/24  # 262
+max_time_day = 3  # 1/24  # 262
 max_time_hr = max_time_day * 24
 max_time_sec = max_time_hr * 60 * 60  # number of seconds in a day
 num_step = 100
@@ -22,18 +22,24 @@ Delta_t_day = linspace(min_time, max_time_day, num=num_step, endpoint=True)
 
 odds = I_Omega / (Delta_t_sec * R_fermi_persec)
 
-one_line = ones(num_step)
+one_line = ones(num_step)*10**2
 
 delay_170817_sec = 1.7
 delay_170817_hr = delay_170817_sec / (60.0 * 60.0)
 delay_170817_day = delay_170817_hr / 24.0
 odds_170817 = I_Omega / (delay_170817_sec * R_fermi_persec)
+#  TODO: Work out why 170817 event does not have the same odds value stated in the paper (~>10^6, eq 30, p6)
 
-plt.plot(Delta_t_day, odds)
-plt.plot(Delta_t_day, one_line)
-plt.plot(delay_170817_day, odds_170817, 'gx')
+odds[0] = odds_170817
+Delta_t_day[0] = delay_170817_day
+
+plt.plot(Delta_t_day, odds, label = r"$\mathcal{O}_{C/SS}(D_{GW}, D_{EM}) = \frac{1}{R_{Fermi}} \frac{1}{[\Delta t]} "
+                                    r"\mathcal{I}_\Omega$")
+plt.plot(Delta_t_day, one_line, label = "Odds of 1")
+plt.plot(delay_170817_day, odds_170817, 'gx', label = "17/08/17 events")
 plt.yscale("log")
-plt.ylabel("Significance")
-plt.xlabel("Time (days)")
-plt.title("Odds Equation (#30 from Ashton et al 2018)")
+plt.ylabel(r"$\mathcal{O}_{C/SS}(D_{GW}, D_{EM})$")
+plt.xlabel(r"$\Delta t$"+" (days)")
+plt.title("Ashton et al 2018, equation #30")
+plt.legend()
 plt.show()
