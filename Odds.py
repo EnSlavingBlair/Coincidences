@@ -10,7 +10,7 @@ R_fermi_persec = R_fermi_perday / 24 / 60 / 60
 
 I_Omega = 32.4  # value taken from Ashton et al paper, for GW170817 and GRB 170817A coincidence
 
-min_time = 0
+min_time = 0.1
 max_time_day = 262  # 3  # 1/24  #
 max_time_hr = max_time_day * 24
 max_time_sec = max_time_hr * 60 * 60  # number of seconds in a day
@@ -44,4 +44,5 @@ plt.ylabel(r"$\mathcal{O}_{C/SS}(D_{GW}, D_{EM})$")
 plt.xlabel(r"$\Delta t$"+" (days)")
 plt.title("Ashton et al 2018, equation #30")
 plt.legend()
-plt.savefig("odds_over_time", format="png")
+plt.show()
+#plt.savefig("odds_over_time", format="png")
