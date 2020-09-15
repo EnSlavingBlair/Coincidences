@@ -27,16 +27,19 @@ def efficiency1(filename):
         redshift.append(float(entry[0]))
         joint_orig.append(float(entry[1]))
         gw_only_orig.append(float(entry[2]))
-    # take the redshift data from the efficiency file and convert to Mpc
-    x_axis = [apc.Distance(z=elem) for elem in redshift]  # turn array of redshift values into Mpc values
+    # take the z_scalar data from the efficiency file and convert to Mpc
+    x_axis = [apc.Distance(z=elem) for elem in redshift]  # turn array of z_scalar values into Mpc values
     z_scalar = [z.value for z in x_axis]
     return joint_orig, gw_only_orig, z_scalar
 
 def efficiency2(filename):
     # convert efficiency data into usable variables
     redshift = [i.strip().split()[0] for i in open(filename).readlines()]
-    eff = [i.strip().split()[1] for i in open(filename).readlines()]
-    return redshift, eff
+    x_axis = [apc.Distance(z=float(elem)) for elem in redshift]
+    z_scalar = [z.value for z in x_axis]
+    efficiency = [i.strip().split()[1] for i in open(filename).readlines()]
+    eff = [float(e) for e in efficiency]
+    return z_scalar, eff
 
 def gaussian(x, mu, sig):
     # returns a Gaussian of mean mu, standard deviation sig, across x-axis x
@@ -44,9 +47,8 @@ def gaussian(x, mu, sig):
     return [np.exp(-np.power(elem - mu, 2.) / (2 * np.power(sig, 2.))) for elem in x]
 
 def basic_detection_range(max_range, distances):
-    # based on O3 detection ranges for aLIGO/Virgo
+    # based on O3 detection ranges for aLIGO/Virgo, Howell ... Slaven-Blair's CHIME/LIGO MOU proposal
     # GW170817 occurred during O2
-    # Howell ... Slaven-Blair's CHIME/LIGO MOU proposal
     return [1 if d <= max_range else 0 for d in distances]
 
 def linear_detection_range(max_range, distances):
@@ -68,46 +70,41 @@ galaxy_max = 44.000
 gw_mean = 40
 gw_stdev = 8
 
-# Detection ranges for aLIGO/Virgo joint EM detections
-range_bns = 162.7799
-# 397 Mpc from CHIME/LIGO MOU paper
+# Detection range
+horizon_dist = 162.7799
 # 162.7799 Mpc from EH on 4/9/2020 for O2
 # 300.1294 Mpc from EH on 4/9/2020 for O3a
-range_bhns = 787  # Mpc, bh=7M., ns=1.4M.
-range_burst = 127  # Mpc
 
 ###########################
 # Read in efficiency data #
 ###########################
 
 # load the efficiency data from file
-gw_eff_file = "GW_efficiency/GW_Eff_funct_2G_2pt5G.txt"
+# gw_eff_file = "GW_efficiency/GW_Eff_funct_2G_2pt5G.txt"
+# joint_orig, gw_only_orig, z_scalar = efficiency1(gw_eff_file)
 
-joint_orig, gw_only_orig, z_scalar = efficiency1(gw_eff_file)
-redshift, o2_eff_curve = efficiency2("GW_efficiency/data_eff_LHV_O2_analytical.dat")
+z_scalar, o2_eff_curve = efficiency2("GW_efficiency/data_eff_LHV_O2_analytical.dat")
 
 #######################################################
 # Get the distribution of the galaxy and GW distances #
 #######################################################
 
-# get the ditribution of the galaxy and GW distance wrt to the Mpc (nee redshift) from the
+# get the distribution of the galaxy and GW distance wrt to the Mpc (nee z_scalar) from the
 # efficiency file
 galaxy_gauss = gaussian(z_scalar, galaxy_mean, galaxy_stdev)
 gw_gauss = gaussian(z_scalar, gw_mean, gw_stdev)
-
-bns_detection_range, bns_number = linear_detection_range(range_bns, z_scalar)
 
 #######################
 # Combine information #
 #######################
 
-coinc_dist = np.array(galaxy_gauss) * np.array(gw_gauss) #* bns_number
+coinc_dist = np.array(galaxy_gauss) * np.array(gw_gauss) / o2_eff_curve
 
 ###############
 # Plot things #
 ###############
 
-# plot the gaussians
+# plot the Gaussians
 plt.plot(z_scalar, galaxy_gauss, ':', color = 'cornflowerblue', label = 'NGC 4993 Metric Distance')
 plt.plot(z_scalar, gw_gauss, '--', color='purple', label='Gravitational Waves')
 
