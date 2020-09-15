@@ -9,7 +9,7 @@ import os
 import matplotlib.pyplot as plt
 
 
-def get_map(event):
+def get_map(event, basepath_loc):
     # get normalised map for input event name
     basepath = basepath_loc + event + '/'
     for entry in os.listdir(basepath):
@@ -81,9 +81,9 @@ for idx1 in range(len(events1)):
         print(str(idx1)+"/"+str(len(events1))+" : "+str(idx2)+"/"+str(len(events2)))  # shows progress
         I_Omega = "may be different shapes"  # will print if rest doesn't work
         if events1[idx1] != events2[idx2]:  # avoiding comparing event to itself
-            map1 = get_map(events1[idx1])  # get normalised map for event
+            map1 = get_map(events1[idx1], basepath_loc1)  # get normalised map for event
             print("map1: "+events1[idx1])
-            map2 = get_map(events2[idx2])  # get normalised map for event
+            map2 = get_map(events2[idx2], basepath_loc2)  # get normalised map for event
             print("map2: "+events2[idx2])
             map1, map2 = shape_maps(map1, map2)  # set maps to be the same size
             print("Maps now the same size")
@@ -98,8 +98,8 @@ f.close()
 
 # test one map with itself - should be >> 1 (probably around 200+)
 idx = 1
-map1 = get_map(events1[idx])
-map2 = get_map(events2[idx])
+map1 = get_map(events1[idx], basepath_loc1)
+map2 = get_map(events2[idx], basepath_loc2)
 map1, map2 = shape_maps(map1, map2)
 I_Omega = coinc(map1, map2, events1[idx], events2[idx])
 print("I_Omega: "+str(I_Omega))
