@@ -56,6 +56,7 @@ basepath_rate = 'data/170817_event_rate/'
 events1 = []
 events2 = []
 times = []
+em_rates = []
 for entry in os.listdir(basepath_loc1):
     if os.path.isdir(os.path.join(basepath_loc1, entry)):
         events1.append(entry)
@@ -70,31 +71,33 @@ for entry in os.listdir(basepath_time):
 
 for entry in os.listdir(basepath_rate):
     with open(basepath_rate + entry, 'r') as f:
-        em_rates = np.float(f.readline())/(24*60*60)  # rates in per second
+        for line in f:
+            em_rates.append(np.float(line[:-1])/(24*60*60))  # rates in per second
 
-# will write the most significant coincidences found using this method to "significant_coincidences.txt"
-f = open("significant_coincidences.txt","w")
 
 # Compare each event with each other event with no double ups
-for idx1 in range(len(events1)):
-    for idx2 in range(idx1+1, len(events2)):
-        print(str(idx1)+"/"+str(len(events1))+" : "+str(idx2)+"/"+str(len(events2)))  # shows progress
-        I_Omega = "may be different shapes"  # will print if rest doesn't work
-        if events1[idx1] != events2[idx2]:  # avoiding comparing event to itself
-            map1 = get_map(events1[idx1], basepath_loc1)  # get normalised map for event
-            print("map1: "+events1[idx1])
-            map2 = get_map(events2[idx2], basepath_loc2)  # get normalised map for event
-            print("map2: "+events2[idx2])
-            map1, map2 = shape_maps(map1, map2)  # set maps to be the same size
-            print("Maps now the same size")
-            I_Omega = coinc(map1, map2, events1[idx1], events2[idx2]) # following Ashton et al 2018 to get significance
-            print("I_Omega for " + str(events1[idx1]) + " and " + str(events2[idx2]) + ": " + str(I_Omega))
-            if I_Omega >= 1: # write significance events to "significant_coincidences.txt"
-                f.write(str(events1[idx1]) + "   " + str(events2[idx2]) + "   " + str(I_Omega) + "    " + str(times[idx2] - times[idx1]) + "    " + str(em_rates) + "   " + str(1/em_rates * 1/np.abs(times[idx2]-times[idx1]) * I_Omega) + "\n")
-        elif events1[idx1] == events2[idx2]:  # double for loop at start should avoid this, prints if it doesn't work
-            print("Tried comparing to itself")
+with open("significant_coincidences.txt","w") as f:  # will write the most significant coincidences found using this
+    # method to "significant_coincidences.txt"
+    for idx1 in range(len(events1)):
+        for idx2 in range(idx1, len(events2)):
+            print(str(idx1+1)+"/"+str(len(events1))+" : "+str(idx2+1)+"/"+str(len(events2)))  # shows progress
+            I_Omega = "may be different shapes"  # will print if rest doesn't work
+            if events1[idx1] != events2[idx2]:  # avoiding comparing event to itself
+                map1 = get_map(events1[idx1], basepath_loc1)  # get normalised map for event
+                print("map1: "+events1[idx1])
+                map2 = get_map(events2[idx2], basepath_loc2)  # get normalised map for event
+                print("map2: "+events2[idx2])
+                map1, map2 = shape_maps(map1, map2)  # set maps to be the same size
+                print("Maps now the same size")
+                I_Omega = coinc(map1, map2, events1[idx1], events2[idx2]) # following Ashton et al 2018 to get significance
+                print("I_Omega for " + str(events1[idx1]) + " and " + str(events2[idx2]) + ": " + str(I_Omega))
+                if I_Omega >= 1: # write significance events to "significant_coincidences.txt"
+                    f.write(str(events1[idx1]) + "   " + str(events2[idx2]) + "   " + str(I_Omega) + "    " + str(times[idx2] - times[idx1]) + "    " + str(em_rates[2]/(em_rates[0]*em_rates[1])) + "   " + str(em_rates[2]/(em_rates[0]*em_rates[1]) * 1/np.abs(times[idx2]-times[idx1]) * I_Omega) + "\n")
+            elif events1[idx1] == events2[idx2]:  # double for loop at start should avoid this, prints if it doesn't work
+                print("Tried comparing to itself")
 
-f.close()
+# TODO: Get the correct data: Use EM data, not just GW. Use the correct GW rates for the survey.
+# TODO: For GW170817: Get GRB sky localisation and timing. Get GW and joint rates for O2.
 
 # test one map with itself - should be >> 1 (probably around 200+)
 idx = 1
