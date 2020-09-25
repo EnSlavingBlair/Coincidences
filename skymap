@@ -7,11 +7,12 @@ import healpy as hp
 import numpy as np
 import os
 import matplotlib.pyplot as plt
-
+import pickle
+from astropy.io import fits
 
 def get_map(event, basepath_loc):
     # get normalised map for input event name
-    basepath = basepath_loc + event + '/'
+    basepath = basepath_loc + event
     for entry in os.listdir(basepath):
         if os.path.isfile(os.path.join(basepath, entry)):
             map_pdf = hp.read_map(basepath+entry, verbose=False)
@@ -74,6 +75,17 @@ for entry in os.listdir(basepath_rate):
         for line in f:
             em_rates.append(np.float(line[:-1])/(24*60*60))  # rates in per second
 
+# Get CHIME data - make sure to use pickling-protocol.py on data to convert from py3 to py2 compatibility
+with open("/home/tess/Documents/PhD/2020-2025/PyCharm/Coincidences/data/FRB/190303.J1353+48.pkl") as f:
+    frb_data = pickle.load(f)
+
+# frb_ra_density = np.abs(frb_data["extent"][1] - frb_data["extent"][0]) / len(frb_data["Z"][0])  # degrees per pixel
+# frb_dec_density = np.abs(frb_data["extent"][3] - frb_data["extent"][2]) / len(frb_data["Z"])  # degrees per pixel
+# hdu = fits.PrimaryHDU()
+# hdu.data = frb_data["Z"]
+# hdu.header['event_id'] = frb_data["event_id"]
+# hdu.writeto('data/FRB/190303.J1353+48.fits', clobber=True)  # clobber overwrites any file already there
+# frb_map = get_map("190303.J1353+48", 'data/FRB/')
 
 # Compare each event with each other event with no double ups
 with open("significant_coincidences.txt","w") as f:  # will write the most significant coincidences found using this
@@ -83,9 +95,9 @@ with open("significant_coincidences.txt","w") as f:  # will write the most signi
             print(str(idx1+1)+"/"+str(len(events1))+" : "+str(idx2+1)+"/"+str(len(events2)))  # shows progress
             I_Omega = "may be different shapes"  # will print if rest doesn't work
             if events1[idx1] != events2[idx2]:  # avoiding comparing event to itself
-                map1 = get_map(events1[idx1], basepath_loc1)  # get normalised map for event
+                map1 = get_map(events1[idx1] + '/', basepath_loc1)  # get normalised map for event
                 print("map1: "+events1[idx1])
-                map2 = get_map(events2[idx2], basepath_loc2)  # get normalised map for event
+                map2 = get_map(events2[idx2] + '/', basepath_loc2)  # get normalised map for event
                 print("map2: "+events2[idx2])
                 map1, map2 = shape_maps(map1, map2)  # set maps to be the same size
                 print("Maps now the same size")
@@ -100,9 +112,24 @@ with open("significant_coincidences.txt","w") as f:  # will write the most signi
 # TODO: For GW170817: Get GRB sky localisation and timing. Get GW and joint rates for O2.
 
 # test one map with itself - should be >> 1 (probably around 200+)
-idx = 1
-map1 = get_map(events1[idx], basepath_loc1)
-map2 = get_map(events2[idx], basepath_loc2)
-map1, map2 = shape_maps(map1, map2)
-I_Omega = coinc(map1, map2, events1[idx], events2[idx])
-print("I_Omega: "+str(I_Omega))
+# idx = 1
+# map1 = get_map(events1[idx], basepath_loc1)
+# map2 = get_map(events2[idx], basepath_loc2)
+# map1, map2 = shape_maps(map1, map2)
+# I_Omega = coinc(map1, map2, events1[idx], events2[idx])
+# print("I_Omega: "+str(I_Omega))
+
+gw_map = map2
+
+nside = hp.get_nside(gw_map)
+
+dec = np.linspace(frb_data["extent"][3], frb_data["extent"][2], 64)
+ra = np.linspace(frb_data["extent"][1], frb_data["extent"][0], 256)
+phi, theta = np.meshgrid(ra, dec)
+
+pixel_indicies = hp.ang2pix(nside, np.radians(np.abs(theta-90)), np.radians(phi))
+frb_map = np.zeros(hp.nside2npix(nside))
+frb_map[pixel_indicies] = frb_data["Z"]
+
+hp.mollview(frb_map / sum(frb_map) + map2 / sum(gw_map))
+plt.show()
